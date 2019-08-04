@@ -1,0 +1,483 @@
+---
+title: "Customer Churn"
+author: "Saurabh Mudgal"
+date: "16 May 2019"
+output:
+  word_document: default
+  pdf_document: default
+project: Predictive modelling - Module 5, GreatLakes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+#Set working directory
+
+setwd("C:\\BACP\\Module 5 - Predictive Modelling\\customer Churn")
+getwd()
+
+#libraries ######
+library(knitr)
+library(rmarkdown)
+library(ggplot2)
+library(dplyr)
+library("car")
+library("caret")
+library(ROCR)
+#install.packages("pROC")
+library("pROC")
+  
+
+#read data from excel
+CustChurn = read.csv("Cellphone.csv",2)
+attach(CustChurn)
+
+##Exploratory data analysis 
+
+
+#Names of the columns
+names(CustChurn)
+#total number of rows and columns
+dim(CustChurn)
+#class of each feature 
+str(CustChurn)
+#top 6 rows 
+head(CustChurn)
+#missing value
+colSums(is.na(CustChurn))
+
+#univariate analysis 
+
+#Churn
+unique(Churn)
+
+
+
+lables=c("not churn", "churn")
+table(Churn)
+summary(Churn)
+
+
+CustChurn %>% ggplot(aes(x=Churn))+
+  geom_bar(aes(fill=Churn))
+
+pie(as.numeric(Churn),lables,col = rainbow(length(Churn)),main="Customer Churn" )
+
+#Accounts active timeperiod
+
+summary(AccountWeeks)
+AccountWeeks_BKT = ifelse(AccountWeeks < 50, "0-50",
+                          ifelse(AccountWeeks < 100 , "50-100",
+                                 ifelse(AccountWeeks < 150, "100-150",
+                                        ifelse(AccountWeeks<200,"150-200","200+"
+                                               ))))
+summary(AccountWeeks_BKT)
+
+CustChurn %>% ggplot(aes(x=AccountWeeks_BKT))+
+  geom_bar(aes(fill=AccountWeeks_BKT)) 
+
+#Contracts renewal
+summary(ContractRenewal)
+unique(ContractRenewal)
+table(ContractRenewal)
+
+#converting to factor variable  as contractrenewal has 2 values
+#CustChurn$ContractRenewal   =   as.factor(ContractRenewal)
+
+
+CustChurn %>% ggplot(aes(x=ContractRenewal))+
+  geom_bar(aes(fill=ContractRenewal)) 
+
+##Data plan
+
+unique(DataPlan)
+table(DataPlan)
+
+#converting to factor variable  as contractrenewal has 2 values
+#CustChurn$DataPlan   =   as.factor(DataPlan)
+
+CustChurn %>% ggplot(aes(x=DataPlan))+
+  geom_bar(aes(fill=DataPlan)) 
+
+##Data usage
+summary(DataUsage)
+unique(DataUsage)
+
+Datausage_BKT = ifelse(DataUsage < 1, "0-1",
+                          ifelse(DataUsage < 2 , "1-2",
+                                 ifelse(DataUsage <3, "2-3",
+                                        ifelse(DataUsage  < 4,"3-4",
+                                              ifelse(DataUsage  < 5,"4-5",       
+                                               "5+"
+                                               )))))
+
+CustChurn %>% ggplot(aes(x=Datausage_BKT))+
+  geom_bar(aes(fill=Datausage_BKT)) 
+
+
+##Cust service calls 
+summary(CustServCalls)
+unique(CustServCalls)
+table(CustServCalls)
+
+#CustChurn$CustServCalls   =   as.factor(CustServCalls)
+
+CustServCalls_BKT = ifelse( CustServCalls  < 3, "0-3",
+                          ifelse(CustServCalls < 6 , "3-6",
+                                    "6+"
+                                ))
+
+CustChurn %>% ggplot(aes(x=CustServCalls_BKT))+
+  geom_bar(aes(fill=CustServCalls_BKT)) 
+
+
+##Average mins per day calls
+summary(DayMins)
+unique(DayMins)
+
+DayMins_BKT = ifelse(DayMins < 100, "0-100",
+                          ifelse(DayMins < 200 , "100-200",
+                                 ifelse(DayMins <300, "200-300",
+                                        "300+"
+                                               )))
+
+CustChurn %>% ggplot(aes(x=DayMins_BKT))+
+  geom_bar(aes(fill=DayMins_BKT)) 
+
+## number of calls in a day 
+
+summary(DayCalls)
+unique(DayCalls)
+
+Daycalls_BKT = ifelse(DayCalls < 50, "0-50",
+                          ifelse(DayCalls < 100 , "50-100",
+                                 ifelse(DayCalls <150, "100-150",
+                                        "150+"
+                                               )))
+
+
+CustChurn %>% ggplot(aes(x=Daycalls_BKT))+
+  geom_bar(aes(fill=Daycalls_BKT)) 
+
+## monthly bill
+summary(MonthlyCharge)
+
+MonthlyCharge_BKT = ifelse(MonthlyCharge < 50, "0-50",
+                          ifelse(MonthlyCharge < 100 , "50-100",
+                                 "100+"
+                                               ))
+CustChurn %>% ggplot(aes(x=MonthlyCharge_BKT))+
+  geom_bar(aes(fill=MonthlyCharge_BKT)) 
+
+## overage charges
+
+summary(OverageFee)
+
+OverageFee_BKT = ifelse(OverageFee < 6, "0-6",
+                          ifelse(OverageFee < 12 , "6-12",
+                                 ifelse(OverageFee < 18 , "12-18",
+                                 "18+"
+                                    )))
+                        
+CustChurn %>% ggplot(aes(x=OverageFee_BKT))+
+  geom_bar(aes(fill=OverageFee_BKT)) 
+
+ggplot(CustChurn, aes(x=OverageFee)) +
+  geom_histogram(binwidth = 5, colour='red' )
+
+## Roaming mins 
+
+
+summary(RoamMins)
+
+
+
+
+RoamMins_BKT = ifelse(RoamMins < 5,"0-5",
+                          ifelse(RoamMins < 10 , "5-10",
+                                 ifelse(RoamMins < 15 , "10-15",
+                                 "15+"
+                                    )))
+                        
+CustChurn %>% ggplot(aes(x=RoamMins_BKT))+
+  geom_bar(aes(fill=RoamMins_BKT)) 
+
+#ggplot(CustChurn, aes(x=RoamMins)) +
+ # geom_histogram(binwidth = 4, colour='red' )
+
+
+### Bi-variate analysis 
+
+##Churn and Accounts week
+#ggplot(CustChurn,aes(x=AccountWeeks, fill=Churn))  + geom_bar() +
+ # labs(title = "Churn vs ActiveAcconts")
+
+ggplot(CustChurn,aes(x=AccountWeeks, fill=factor(Churn),colour=AccountWeeks))  + geom_bar() +labs(title = "Churn vs Accounts Active weeks ")
+
+#plot(Churn~AccountWeeks)
+
+## Churn and COntract renewal
+
+ggplot(CustChurn,aes(x=ContractRenewal, fill=factor(Churn),colour=ContractRenewal))  + geom_bar() +labs(title = "Churn vs Contract Renewal")
+
+ #  (Churn~ContractRenewal)
+## Churn and data plan
+
+ggplot(CustChurn,aes(x=as.factor(DataPlan)  , fill=factor(Churn),colour=DataPlan))  + geom_bar() +labs(title = "Churn vs Data plan")
+
+CustChurn %>%
+  group_by(DataPlan,Churn) %>% tally()
+
+## Churn and data usage
+
+plot(Churn ~ DataUsage,CustChurn)
+
+ggplot(CustChurn,aes(x=DataUsage  , fill=factor(Churn),colour=DataUsage))  + geom_bar() +labs(title = "Churn vs Data usage")
+
+#CustChurn %>%
+ # group_by(Churn,DataUsage) %>% tally()
+
+
+## Churn and cust service calls 
+
+ggplot(CustChurn,aes(x=CustServCalls  , fill=factor(Churn),colur=CustServCalls))  + geom_bar() +labs(title = "Churn vs Customer Servc calls")
+
+CustChurn %>%
+  group_by(CustServCalls,Churn) %>% tally()
+  
+## Churn and dat time minutes calls 
+
+ggplot(CustChurn,aes(x=DayMins  , fill=factor(Churn),colour=DayMins))  + geom_bar() +
+labs(title = "Churn vs Day time minutes call")
+
+#plot(Churn~DayMins,CustChurn)
+
+#CustChurn %>%
+#  group_by(DayMins,Churn) %>% tally()
+## Churn and day calls 
+
+ggplot(CustChurn,aes(x=DayCalls  , fill=factor(Churn),colour=DayCalls))  + geom_bar() +labs(title = "Churn vs Day calls")
+
+plot(Churn~DayCalls,CustChurn)
+
+## Churn and monthcharge 
+
+ggplot(CustChurn,aes(x=MonthlyCharge, fill=factor(Churn),colour=MonthlyCharge))  + geom_bar() +labs(title = "Churn vs Overage fees")
+
+
+#plot(Churn~MonthlyCharge,CustChurn)
+
+
+## Churn and overage fees 
+
+ggplot(CustChurn,aes(x=OverageFee  , fill=factor(Churn),colour=OverageFee))  + geom_bar() +labs(title = "Churn vs Overage fees")
+
+
+#plot(Churn~OverageFee,CustChurn)
+
+
+## Churn and roaming mins
+
+ggplot(CustChurn,aes(x=RoamMins  , fill=factor(Churn),colour=RoamMins))  + geom_bar() +  labs(title = "Churn vs Roaming mins")
+
+## plot for Overage fees and Month charge and Churm
+
+qplot(AccountWeeks,MonthlyCharge,colour=Churn ,data=CustChurn)
+
+
+#plot(Churn~RoamMins,CustChurn)
+
+## Dividind the data into test and training data set 
+
+set.seed(123)
+
+  ind = sample(2,nrow(CustChurn),replace = TRUE,prob = c(.7,.3))
+  dev_sample = CustChurn[ind==1,] 
+  test_sample = CustChurn[ind==2,]
+  table(CustChurn$Churn )
+  table(dev_sample$Churn)
+  table(test_sample$Churn)
+  
+  # Run the logistic model 
+  
+  
+  
+  model1 = glm(formula = Churn ~   AccountWeeks + ContractRenewal + DataPlan + DataUsage + CustServCalls + DayMins+DayCalls + MonthlyCharge + OverageFee + RoamMins,family = "binomial" ,data=dev_sample )
+
+  summary(model1)
+  vif(model1)
+  
+  
+  #Predict the test sample 
+  
+  
+  pred1 = predict(model1,newdata = test_sample, type = "response")
+  
+  Churn_pred_num = ifelse(pred1 >.5,1,0)
+  churn_pred = factor(Churn_pred_num,levels = c(0,1))   
+  churn_act = test_sample$Churn
+  
+  
+   confusionMatrix(churn_pred,as.factor(churn_act))
+  #CF$table[1,2]
+  
+  mean(churn_pred == churn_act)  ##accuracy of 86%%
+  
+  
+  #check  for ROC
+  pr = prediction(pred1,test_sample$Churn)
+  perf = performance(pr,measure = "tpr",x.measure = "fpr")
+  plot(perf) 
+  auc(test_sample$Churn,pred1)
+  
+  
+  
+  
+  #pred2 = predict(model1,newdata = dev_sample, type = "response")
+  #Churn_pred_num1 = ifelse(pred2 >.5,1,0)
+  #churn_pred1 = factor(Churn_pred_num1,levels = c(0,1))   
+  #churn_act1 = dev_sample$Churn
+    #confusionMatrix(churn_pred1,churn_act1)
+  
+  # Run the logistic model by removing Accountweek as its insignificant 
+  model2 = glm(formula = Churn ~    ContractRenewal + DataPlan + DataUsage + CustServCalls + DayMins+DayCalls + MonthlyCharge + OverageFee + RoamMins,family = "binomial" ,data=dev_sample )
+
+  summary(model2)  
+vif(model2)
+
+ 
+  
+  
+pred2 = predict(model2,newdata = test_sample, type = "response")
+  
+  Churn_pred_num = ifelse(pred2 >.5,1,0)
+  churn_pred = factor(Churn_pred_num,levels = c(0,1))   
+  churn_act = test_sample$Churn
+  
+  
+   confusionMatrix(churn_pred,as.factor(churn_act))
+  #CF$table[1,2]
+  
+  mean(churn_pred == churn_act)  ##accuracy of 86%%
+  
+   # checking ROC
+  pr = prediction(pred2,test_sample$Churn)
+  perf = performance(pr,measure = "tpr",x.measure = "fpr")
+  plot(perf) 
+  auc(test_sample$Churn,pred2)
+
+  # Run the logistic model by removing Dataplan as its insignific
+  model3 = glm(formula = Churn ~    ContractRenewal +  DataUsage + CustServCalls + DayMins+DayCalls + MonthlyCharge + OverageFee + RoamMins,family = "binomial" ,data=dev_sample )
+
+  summary(model3)  
+vif(model3)  
+
+pred3 = predict(model3,newdata = test_sample, type = "response")
+  
+  Churn_pred_num = ifelse(pred3>.5,1,0)
+  churn_pred = factor(Churn_pred_num,levels = c(0,1))   
+  churn_act = test_sample$Churn
+  
+  
+   confusionMatrix(churn_pred,as.factor(churn_act))
+  #CF$table[1,2]
+  
+  mean(churn_pred == churn_act)  ##accuracy of 86%%
+  
+  # checking ROC
+  pr = prediction(pred3,test_sample$Churn)
+  perf = performance(pr,measure = "tpr",x.measure = "fpr")
+  plot(perf) 
+  auc(test_sample$Churn,pred3)
+    
+  
+
+  # Run the logistic model by removing Data usage  as its insignific
+  model4 = glm(formula = Churn ~    ContractRenewal  + CustServCalls + DayMins+DayCalls + MonthlyCharge + OverageFee + RoamMins,family = "binomial" ,data=dev_sample )
+
+  summary(model4)  
+  
+  ##calculate VIF for multicolinearity 
+    vif(model4)    
+  
+    pred4 = predict(model4,newdata = test_sample, type = "response")
+  
+  Churn_pred_num = ifelse(pred4>.5,1,0)
+  churn_pred = factor(Churn_pred_num,levels = c(0,1))   
+  churn_act = test_sample$Churn
+  
+  
+   confusionMatrix(churn_pred,as.factor(churn_act))
+    
+    # checking ROC
+  pr = prediction(pred4,test_sample$Churn)
+  perf = performance(pr,measure = "tpr",x.measure = "fpr")
+  plot(perf) 
+  auc(test_sample$Churn,pred4)
+    
+    
+    # Run the logistic model by removing day calls  as its insignific
+  model5 = glm(formula = Churn ~    ContractRenewal  + CustServCalls + DayMins + MonthlyCharge + OverageFee + RoamMins,family = "binomial" ,data=dev_sample )
+
+  summary(model5)  
+  
+  ##calculate VIF for multicolinearity 
+  
+  vif(model5)
+  
+  
+ #checking with proabability of .6  
+  pred5 = predict(model5,newdata = test_sample, type = "response")
+  
+  Churn_pred_num = ifelse(pred5 >.6,1,0)
+  churn_pred = factor(Churn_pred_num,levels = c(0,1))   
+  churn_act = test_sample$Churn
+  confusionMatrix(churn_pred,as.factor(churn_act))
+  
+  
+  
+  
+  #check for ROC for model fit 
+  
+  
+  pr = prediction(pred5,test_sample$Churn)
+  perf = performance(pr,measure = "tpr",x.measure = "fpr")
+  plot(perf) 
+  auc(test_sample$Churn,pred5)
+  
+  
+  pred5 = predict(model5,newdata = test_sample, type = "response")
+  
+  Churn_pred_num = ifelse(pred1 > .65,1,0)
+  churn_pred = factor(Churn_pred_num,levels = c(0,1))   
+  churn_act = test_sample$Churn
+  confusionMatrix(churn_pred,as.factor(churn_act))
+  
+  
+  
+  #CF$table[1,2]
+  
+  mean(churn_pred == churn_act)  ##accuracy of 86%%
+  
+
+  
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
